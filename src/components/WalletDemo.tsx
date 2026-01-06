@@ -128,11 +128,11 @@ export function WalletDemo() {
     setLoading("fund");
     setTxResult(null);
     try {
-      const result = await senderWallet.stagingFund(10, "base-sepolia");
+      // stagingFund returns the updated wallet balances, not a txId
+      await senderWallet.stagingFund(10, "base-sepolia");
       setTxResult({
         success: true,
         type: "fund",
-        txId: result.txId,
       });
       setTimeout(refreshSenderBalances, 3000);
     } catch (err: any) {
