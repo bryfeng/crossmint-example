@@ -17,7 +17,7 @@ export async function POST() {
 
     // Create new wallet if none exists, otherwise return existing
     if (!recipientWallet) {
-      recipientWallet = await wallets.getOrCreateWallet({
+      recipientWallet = await wallets.createWallet({
         chain: "base-sepolia",
         signer: { type: "api-key" },
       });
@@ -41,19 +41,11 @@ export async function POST() {
 
 // GET - Get recipient wallet info and balances
 export async function GET() {
-  // If wallet was lost (e.g., hot reload in dev), try to recover it
   if (!recipientWallet) {
-    try {
-      recipientWallet = await wallets.getOrCreateWallet({
-        chain: "base-sepolia",
-        signer: { type: "api-key" },
-      });
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "No recipient wallet created yet" },
-        { status: 404 }
-      );
-    }
+    return NextResponse.json(
+      { success: false, error: "No recipient wallet created yet. Call POST first." },
+      { status: 404 }
+    );
   }
 
   try {

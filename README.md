@@ -200,7 +200,7 @@ let recipientWallet: Wallet<Chain> | null = null;
 
 // Create new wallet if none exists
 if (!recipientWallet) {
-  recipientWallet = await wallets.getOrCreateWallet({
+  recipientWallet = await wallets.createWallet({
     chain: "base-sepolia",
     signer: { type: "api-key" },
   });
