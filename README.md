@@ -117,6 +117,48 @@ Gets recipient wallet info and balances.
 
 ## Key SDK Usage
 
+### Authentication Setup
+
+Wrap your app with `CrossmintProvider` and `CrossmintAuthProvider` to enable authentication:
+
+```typescript
+import {
+  CrossmintProvider,
+  CrossmintAuthProvider,
+} from "@crossmint/client-sdk-react-ui";
+
+function App({ children }) {
+  return (
+    <CrossmintProvider apiKey={process.env.NEXT_PUBLIC_CROSSMINT_API_KEY}>
+      <CrossmintAuthProvider loginMethods={["email", "google"]}>
+        {children}
+      </CrossmintAuthProvider>
+    </CrossmintProvider>
+  );
+}
+```
+
+Available login methods: `"email"`, `"google"`, `"farcaster"`
+
+### Using the Auth Hook
+
+```typescript
+import { useAuth } from "@crossmint/client-sdk-react-ui";
+
+const { login, logout, user, status } = useAuth();
+
+// status: "logged-out" | "in-progress" | "logged-in"
+// user: { email?: string, ... } when logged in
+
+// Trigger login modal
+await login();
+
+// Sign out
+await logout();
+```
+
+> **Note:** Users must be authenticated before creating passkey wallets. The `useCrossmint()` hook provides the authenticated context needed for wallet operations.
+
 ### Client-side Passkey Wallet
 ```typescript
 import { useCrossmint } from "@crossmint/client-sdk-react-ui";
