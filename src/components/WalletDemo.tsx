@@ -127,14 +127,46 @@ export function WalletDemo() {
     if (!senderWallet) return;
     setLoading("fund");
     setTxResult(null);
+
     try {
-      // stagingFund returns the updated wallet balances, not a txId
-      await senderWallet.stagingFund(10, "base-sepolia");
+      // Step 1: Get sender's current USDXM balance before funding
+      const preBal = await senderWallet.balances(["usdxm"]);
+      const usdxmToken = preBal.tokens.find(
+        (t) => t.symbol.toLowerCase() === "usdxm"
+      );
+      const currentSenderUsdxm = usdxmToken ? parseFloat(usdxmToken.amount) : 0;
+      const fundAmount = 10;
+      const expectedBalance = currentSenderUsdxm + fundAmount;
+      console.log(`Current sender USDXM: ${currentSenderUsdxm}, Expected after fund: ${expectedBalance}`);
+
+      // Step 2: Fund the wallet
+      await senderWallet.stagingFund(fundAmount, "base-sepolia");
       setTxResult({
         success: true,
         type: "fund",
+        amount: fundAmount,
       });
-      setTimeout(refreshSenderBalances, 3000);
+
+      // Step 3: Poll sender balance until it reaches expected amount (max 10 attempts)
+      setLoading("refreshSender");
+      for (let i = 0; i < 10; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const bal = await senderWallet.balances(["usdxm"]);
+        setSenderBalances({
+          nativeToken: bal.nativeToken,
+          usdc: bal.usdc,
+          tokens: bal.tokens,
+        });
+        const newUsdxm = bal.tokens.find(
+          (t) => t.symbol.toLowerCase() === "usdxm"
+        );
+        const newBalance = newUsdxm ? parseFloat(newUsdxm.amount) : 0;
+        console.log(`Poll ${i + 1}: Sender USDXM balance = ${newBalance}, expected = ${expectedBalance}`);
+        if (newBalance >= expectedBalance) {
+          console.log("Sender balance updated successfully!");
+          break;
+        }
+      }
     } catch (err: any) {
       setTxResult({ success: false, error: err.message });
     }
@@ -461,8 +493,15 @@ export function WalletDemo() {
             {txResult.success ? (
               <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
                 <p className="text-green-400 font-semibold mb-2">
-                  ✓ {txResult.type === "fund" ? "Wallet Funded!" : `Sent ${txResult.amount} USDXM!`}
+                  ✓ {txResult.type === "fund" ? `Funded ${txResult.amount} USDXM!` : `Sent ${txResult.amount} USDXM!`}
                 </p>
+                {txResult.type === "fund" && (
+                  <p className="text-sm text-slate-300 mb-3">
+                    {loading === "refreshSender"
+                      ? "⏳ Waiting for sender balance to update..."
+                      : "✓ Sender balance updated - check above!"}
+                  </p>
+                )}
                 {txResult.type === "send" && (
                   <p className="text-sm text-slate-300 mb-3">
                     {loading === "refreshRecipient"
