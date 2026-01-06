@@ -175,7 +175,9 @@ This demo uses **Base Sepolia** (testnet). The SDK supports:
 
 - [Crossmint Documentation](https://docs.crossmint.com)
 - [Wallets SDK Reference](https://docs.crossmint.com/wallets/quickstart)
-- [Next.js Documentation](https://nextjs.org/docs)
+- [Crossmint SDK](https://nextjs.org/docs](https://github.com/Crossmint/crossmint-sdk)
+
+Additional Questions please contact Bryan Feng @bryfeng on telegram
 
 ## License
 
