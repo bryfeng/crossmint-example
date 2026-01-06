@@ -7,18 +7,25 @@ const crossmint = createCrossmint({
 });
 const wallets = CrossmintWallets.from(crossmint);
 
-// Store wallet in memory (in production, use a database)
-let recipientWallet: any = null;
+// Fixed linkedUser for demo - ensures we always get the same wallet back
+// In production, use a real user ID from your auth system
+const DEMO_LINKED_USER = "demo-recipient-wallet";
+
+// Helper to get or create the recipient wallet (idempotent with linkedUser)
+async function getRecipientWallet() {
+  return await wallets.getOrCreateWallet({
+    chain: "base-sepolia",
+    signer: { type: "api-key" },
+    linkedUser: `user:${DEMO_LINKED_USER}`,
+  });
+}
 
 // POST - Create recipient wallet
 export async function POST() {
   try {
     console.log("Creating recipient wallet on server...");
 
-    recipientWallet = await wallets.createWallet({
-      chain: "base-sepolia",
-      signer: { type: "api-key" },
-    });
+    const recipientWallet = await getRecipientWallet();
 
     console.log(`Recipient wallet created: ${recipientWallet.address}`);
 
@@ -38,14 +45,10 @@ export async function POST() {
 
 // GET - Get recipient wallet info and balances
 export async function GET() {
-  if (!recipientWallet) {
-    return NextResponse.json(
-      { success: false, error: "No recipient wallet created yet" },
-      { status: 404 }
-    );
-  }
-
   try {
+    // getOrCreateWallet is idempotent - returns same wallet for same linkedUser
+    const recipientWallet = await getRecipientWallet();
+
     // Request balances including USDXM
     const balances = await recipientWallet.balances(["usdxm"]);
 
