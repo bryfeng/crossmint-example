@@ -128,11 +128,12 @@ Gets recipient wallet info and balances.
 }
 ```
 
-## Key SDK Usage
+## Code Reference
+
+This section maps SDK usage to actual implementations in the codebase.
 
 ### Authentication Setup
-
-Wrap your app with `CrossmintProvider` and `CrossmintAuthProvider` to enable authentication:
+> **File:** `src/components/CrossmintProviderWrapper.tsx`
 
 ```typescript
 import {
@@ -140,9 +141,9 @@ import {
   CrossmintAuthProvider,
 } from "@crossmint/client-sdk-react-ui";
 
-function App({ children }) {
+export function CrossmintProviderWrapper({ children }) {
   return (
-    <CrossmintProvider apiKey={process.env.NEXT_PUBLIC_CROSSMINT_API_KEY}>
+    <CrossmintProvider apiKey={process.env.NEXT_PUBLIC_CROSSMINT_API_KEY!}>
       <CrossmintAuthProvider loginMethods={["email", "google"]}>
         {children}
       </CrossmintAuthProvider>
@@ -154,68 +155,102 @@ function App({ children }) {
 Available login methods: `"email"`, `"google"`, `"farcaster"`
 
 ### Using the Auth Hook
+> **File:** `src/hooks/useWalletDemo.ts:9-12`
 
 ```typescript
-import { useAuth } from "@crossmint/client-sdk-react-ui";
-
-const { login, logout, user, status } = useAuth();
-
-// status: "logged-out" | "in-progress" | "logged-in"
-// user: { email?: string, ... } when logged in
-
-// Trigger login modal
-await login();
-
-// Sign out
-await logout();
-```
-
-> **Note:** Users must be authenticated before creating passkey wallets. The `useCrossmint()` hook provides the authenticated context needed for wallet operations.
-
-### Client-side Passkey Wallet
-```typescript
-import { useCrossmint } from "@crossmint/client-sdk-react-ui";
-import { CrossmintWallets } from "@crossmint/wallets-sdk";
+import { useCrossmint, useAuth } from "@crossmint/client-sdk-react-ui";
 
 const { crossmint } = useCrossmint();
-const wallets = CrossmintWallets.from(crossmint);
+const { login, logout, user, status: authStatus } = useAuth();
 
+const isLoggedIn = authStatus === "logged-in";
+```
+
+Users must be authenticated before creating passkey wallets.
+
+### Client-side Passkey Wallet
+> **File:** `src/hooks/useWalletDemo.ts:27-48` — `createSenderWallet()`
+
+```typescript
+import { CrossmintWallets } from "@crossmint/wallets-sdk";
+
+const wallets = CrossmintWallets.from(crossmint);
 const wallet = await wallets.getOrCreateWallet({
   chain: "base-sepolia",
   signer: { type: "passkey" },
 });
+
+// Fetch balances after creation
+const balances = await wallet.balances(["usdxm"]);
 ```
 
 ### Server-side API Wallet
+> **File:** `src/app/api/recipient/route.ts:4-24`
+
 ```typescript
-import { CrossmintWallets, createCrossmint } from "@crossmint/wallets-sdk";
+import { CrossmintWallets, createCrossmint, Wallet, Chain } from "@crossmint/wallets-sdk";
 
 const crossmint = createCrossmint({
-  apiKey: process.env.CROSSMINT_SERVER_API_KEY,
+  apiKey: process.env.CROSSMINT_SERVER_API_KEY!,
 });
 const wallets = CrossmintWallets.from(crossmint);
 
-const wallet = await wallets.createWallet({
-  chain: "base-sepolia",
-  signer: { type: "api-key" },
-});
+// Store wallet in memory (persists across requests in same server instance)
+let recipientWallet: Wallet<Chain> | null = null;
+
+// Create new wallet if none exists
+if (!recipientWallet) {
+  recipientWallet = await wallets.getOrCreateWallet({
+    chain: "base-sepolia",
+    signer: { type: "api-key" },
+  });
+}
 ```
 
 ### Funding (Staging Only)
+> **File:** `src/hooks/useWalletDemo.ts:104-153` — `fundSenderWallet()`
+
 ```typescript
 await wallet.stagingFund(10, "base-sepolia");
+
+// Poll for balance update
+const balances = await wallet.balances(["usdxm"]);
 ```
 
 ### Sending Tokens
+> **File:** `src/hooks/useWalletDemo.ts:155-220` — `sendTransaction()`
+
 ```typescript
-const tx = await wallet.send(recipientAddress, "usdxm", "1");
+const tx = await wallet.send(recipientAddress, "usdxm", amount);
 // Returns: { hash, explorerLink, transactionId }
 ```
 
 ### Checking Balances
+> **File:** `src/hooks/useWalletDemo.ts:69-83` — `refreshSenderBalances()`
+
 ```typescript
 const balances = await wallet.balances(["usdxm"]);
 // Returns: { nativeToken, usdc, tokens }
+```
+
+### Hook Return Values
+> **File:** `src/hooks/useWalletDemo.ts:222-246`
+
+The `useWalletDemo()` hook provides everything needed for the demo:
+
+```typescript
+const {
+  // Auth
+  isLoggedIn, authStatus, user, login, logout,
+  // Sender wallet
+  senderWallet, senderBalances, createSenderWallet, refreshSenderBalances,
+  // Recipient wallet
+  recipient, createRecipientWallet, refreshRecipientBalances,
+  // Transaction
+  amount, setAmount, fundSenderWallet, sendTransaction,
+  // UI state
+  txResult, loading,
+} = useWalletDemo();
 ```
 
 ## Chain Support

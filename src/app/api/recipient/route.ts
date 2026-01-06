@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { CrossmintWallets, createCrossmint } from "@crossmint/wallets-sdk";
+import { CrossmintWallets, createCrossmint, Wallet, Chain } from "@crossmint/wallets-sdk";
 
 // Initialize Crossmint with server-side key
 const crossmint = createCrossmint({
@@ -7,25 +7,21 @@ const crossmint = createCrossmint({
 });
 const wallets = CrossmintWallets.from(crossmint);
 
-// Fixed linkedUser for demo - ensures we always get the same wallet back
-// In production, use a real user ID from your auth system
-const DEMO_LINKED_USER = "demo-recipient-wallet";
-
-// Helper to get or create the recipient wallet (idempotent with linkedUser)
-async function getRecipientWallet() {
-  return await wallets.getOrCreateWallet({
-    chain: "base-sepolia",
-    signer: { type: "api-key" },
-    linkedUser: `user:${DEMO_LINKED_USER}`,
-  });
-}
+// Store wallet in memory (persists across requests in same server instance)
+let recipientWallet: Wallet<Chain> | null = null;
 
 // POST - Create recipient wallet
 export async function POST() {
   try {
     console.log("Creating recipient wallet on server...");
 
-    const recipientWallet = await getRecipientWallet();
+    // Create new wallet if none exists, otherwise return existing
+    if (!recipientWallet) {
+      recipientWallet = await wallets.getOrCreateWallet({
+        chain: "base-sepolia",
+        signer: { type: "api-key" },
+      });
+    }
 
     console.log(`Recipient wallet created: ${recipientWallet.address}`);
 
@@ -45,10 +41,22 @@ export async function POST() {
 
 // GET - Get recipient wallet info and balances
 export async function GET() {
-  try {
-    // getOrCreateWallet is idempotent - returns same wallet for same linkedUser
-    const recipientWallet = await getRecipientWallet();
+  // If wallet was lost (e.g., hot reload in dev), try to recover it
+  if (!recipientWallet) {
+    try {
+      recipientWallet = await wallets.getOrCreateWallet({
+        chain: "base-sepolia",
+        signer: { type: "api-key" },
+      });
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "No recipient wallet created yet" },
+        { status: 404 }
+      );
+    }
+  }
 
+  try {
     // Request balances including USDXM
     const balances = await recipientWallet.balances(["usdxm"]);
 
