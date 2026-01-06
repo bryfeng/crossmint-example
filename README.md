@@ -1,6 +1,6 @@
 # Crossmint Wallet Demo
 
-A Next.js demo application showcasing Crossmint's wallet SDK capabilities, including:
+A Next.js demo application showcasing Crossmint's wallet SDK integration, including:
 
 - **Client-side passkey wallet** (self-custody with biometric authentication)
 - **Server-side API wallet** (custodial wallet using API key)
@@ -25,19 +25,22 @@ A Next.js demo application showcasing Crossmint's wallet SDK capabilities, inclu
 5. **Send Transaction** - Transfer USDXM from sender to recipient
 6. **Verify** - Watch recipient balance update automatically
 
-## Tech Stack
-
-- **Next.js 15** - React framework with App Router
-- **Crossmint SDK** - `@crossmint/client-sdk-react-ui` and `@crossmint/wallets-sdk`
-- **Tailwind CSS** - Styling
-- **TypeScript** - Type safety
-
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Crossmint account with staging API keys
+- Crossmint account with API keys
+
+### Get Your API Keys
+
+1. Go to the [Crossmint Console](https://www.crossmint.com/console)
+2. Navigate to the **Overview** section in your project
+3. Copy your API keys:
+   - **Client-side key** (`ck_staging_...` or `ck_production_...`) - Safe to expose in browser
+   - **Server-side key** (`sk_staging_...` or `sk_production_...`) - Keep secret, use only on server
+
+> **Note:** Use `staging` keys for development/testing and `production` keys for live deployments.
 
 ### Installation
 
@@ -53,7 +56,7 @@ Create a `.env.local` file:
 # Client-side key (exposed to browser)
 NEXT_PUBLIC_CROSSMINT_API_KEY=ck_staging_...
 
-# Server-side key (kept secret)
+# Server-side key (kept secret, server-only)
 CROSSMINT_SERVER_API_KEY=sk_staging_...
 ```
 
@@ -159,16 +162,6 @@ const tx = await wallet.send(recipientAddress, "usdxm", "1");
 const balances = await wallet.balances(["usdxm"]);
 // Returns: { nativeToken, usdc, tokens }
 ```
-
-## Deployment
-
-Deploy to Vercel:
-
-```bash
-vercel
-```
-
-Or connect your GitHub repo to Vercel for automatic deployments.
 
 ## Chain Support
 
