@@ -75,14 +75,27 @@ src/
 ├── app/
 │   ├── api/
 │   │   └── recipient/
-│   │       └── route.ts      # Server-side wallet API
-│   ├── layout.tsx            # Root layout with providers
-│   ├── page.tsx              # Main page
+│   │       └── route.ts          # Server-side wallet API
+│   ├── layout.tsx                # Root layout with providers
+│   ├── page.tsx                  # Main page
 │   └── globals.css
+├── types/
+│   └── wallet.ts                 # Shared type definitions
+├── hooks/
+│   └── useWalletDemo.ts          # Wallet business logic hook
 ├── components/
 │   ├── CrossmintProviderWrapper.tsx  # Crossmint context provider
-│   └── WalletDemo.tsx                # Main demo component
+│   ├── WalletDemo.tsx                # Main demo orchestrator
+│   └── sections/
+│       ├── SignInSection.tsx         # Step 0: Auth UI
+│       ├── SenderWalletSection.tsx   # Step 1: Passkey wallet
+│       ├── RecipientWalletSection.tsx # Step 2: Server wallet
+│       ├── FundSection.tsx           # Step 3: Fund with USDXM
+│       ├── SendSection.tsx           # Step 4: Send transaction
+│       └── TransactionResult.tsx     # Result display
 ```
+
+Each section component is self-contained, making it easy to reference specific parts of the integration flow.
 
 ## API Routes
 
