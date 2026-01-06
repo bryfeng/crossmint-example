@@ -100,14 +100,19 @@ Each section component is self-contained, making it easy to reference specific p
 ## API Routes
 
 ### `POST /api/recipient`
-Creates a new server-side wallet using API key authentication.
+Creates a new server-side wallet using API key authentication and returns balances.
 
 **Response:**
 ```json
 {
   "success": true,
   "address": "0x...",
-  "chain": "base-sepolia"
+  "chain": "base-sepolia",
+  "balances": {
+    "nativeToken": { "amount": "0", "symbol": "eth" },
+    "usdc": { "amount": "0", "symbol": "usdc" },
+    "tokens": [{ "amount": "0", "symbol": "usdxm" }]
+  }
 }
 ```
 
@@ -185,7 +190,7 @@ const balances = await wallet.balances(["usdxm"]);
 ```
 
 ### Server-side API Wallet
-> **File:** `src/app/api/recipient/route.ts:4-24`
+> **File:** `src/app/api/recipient/route.ts:4-30`
 
 ```typescript
 import { CrossmintWallets, createCrossmint, Wallet, Chain } from "@crossmint/wallets-sdk";
@@ -195,7 +200,7 @@ const crossmint = createCrossmint({
 });
 const wallets = CrossmintWallets.from(crossmint);
 
-// Store wallet in memory (persists across requests in same server instance)
+// Store wallet object in memory
 let recipientWallet: Wallet<Chain> | null = null;
 
 // Create new wallet if none exists
@@ -205,10 +210,13 @@ if (!recipientWallet) {
     signer: { type: "api-key" },
   });
 }
+
+// Fetch balances using SDK
+const balances = await recipientWallet.balances(["usdxm"]);
 ```
 
 ### Funding (Staging Only)
-> **File:** `src/hooks/useWalletDemo.ts:104-153` — `fundSenderWallet()`
+> **File:** `src/hooks/useWalletDemo.ts:109-158` — `fundSenderWallet()`
 
 ```typescript
 await wallet.stagingFund(10, "base-sepolia");
@@ -218,7 +226,7 @@ const balances = await wallet.balances(["usdxm"]);
 ```
 
 ### Sending Tokens
-> **File:** `src/hooks/useWalletDemo.ts:155-220` — `sendTransaction()`
+> **File:** `src/hooks/useWalletDemo.ts:160-225` — `sendTransaction()`
 
 ```typescript
 const tx = await wallet.send(recipientAddress, "usdxm", amount);
@@ -226,7 +234,7 @@ const tx = await wallet.send(recipientAddress, "usdxm", amount);
 ```
 
 ### Checking Balances
-> **File:** `src/hooks/useWalletDemo.ts:69-83` — `refreshSenderBalances()`
+> **File:** `src/hooks/useWalletDemo.ts:73-88` — `refreshSenderBalances()`
 
 ```typescript
 const balances = await wallet.balances(["usdxm"]);
@@ -234,7 +242,7 @@ const balances = await wallet.balances(["usdxm"]);
 ```
 
 ### Hook Return Values
-> **File:** `src/hooks/useWalletDemo.ts:222-246`
+> **File:** `src/hooks/useWalletDemo.ts:227-251`
 
 The `useWalletDemo()` hook provides everything needed for the demo:
 
