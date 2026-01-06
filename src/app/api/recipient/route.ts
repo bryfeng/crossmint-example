@@ -7,31 +7,32 @@ const crossmint = createCrossmint({
 });
 const wallets = CrossmintWallets.from(crossmint);
 
-// Store wallet in memory (persists across requests in same server instance)
+// Store wallet object in memory
 let recipientWallet: Wallet<Chain> | null = null;
+const CHAIN = "base-sepolia";
 
 // POST - Create recipient wallet and return with balances
 export async function POST() {
   try {
     console.log("Creating recipient wallet on server...");
 
-    // Create new wallet if none exists, otherwise return existing
+    // Create new wallet if none exists
     if (!recipientWallet) {
       recipientWallet = await wallets.createWallet({
-        chain: "base-sepolia",
+        chain: CHAIN,
         signer: { type: "api-key" },
       });
     }
 
     console.log(`Recipient wallet created: ${recipientWallet.address}`);
 
-    // Fetch balances immediately so client doesn't need a separate call
+    // Fetch balances using SDK (faster than REST API)
     const balances = await recipientWallet.balances(["usdxm"]);
 
     return NextResponse.json({
       success: true,
       address: recipientWallet.address,
-      chain: recipientWallet.chain,
+      chain: CHAIN,
       balances: {
         nativeToken: balances.nativeToken,
         usdc: balances.usdc,
@@ -57,13 +58,13 @@ export async function GET() {
   }
 
   try {
-    // Request balances including USDXM
+    // Fetch balances using SDK
     const balances = await recipientWallet.balances(["usdxm"]);
 
     return NextResponse.json({
       success: true,
       address: recipientWallet.address,
-      chain: recipientWallet.chain,
+      chain: CHAIN,
       balances: {
         nativeToken: balances.nativeToken,
         usdc: balances.usdc,
