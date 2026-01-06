@@ -55,7 +55,12 @@ export function useWalletDemo() {
       const res = await fetch("/api/recipient", { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        setRecipient({ address: data.address, chain: data.chain });
+        // POST now returns balances, so we don't need a separate call
+        setRecipient({
+          address: data.address,
+          chain: data.chain,
+          balances: data.balances,
+        });
       } else {
         setTxResult({ success: false, error: data.error });
       }

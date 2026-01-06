@@ -10,7 +10,7 @@ const wallets = CrossmintWallets.from(crossmint);
 // Store wallet in memory (persists across requests in same server instance)
 let recipientWallet: Wallet<Chain> | null = null;
 
-// POST - Create recipient wallet
+// POST - Create recipient wallet and return with balances
 export async function POST() {
   try {
     console.log("Creating recipient wallet on server...");
@@ -25,10 +25,18 @@ export async function POST() {
 
     console.log(`Recipient wallet created: ${recipientWallet.address}`);
 
+    // Fetch balances immediately so client doesn't need a separate call
+    const balances = await recipientWallet.balances(["usdxm"]);
+
     return NextResponse.json({
       success: true,
       address: recipientWallet.address,
       chain: recipientWallet.chain,
+      balances: {
+        nativeToken: balances.nativeToken,
+        usdc: balances.usdc,
+        tokens: balances.tokens,
+      },
     });
   } catch (error: any) {
     console.error("Failed to create recipient wallet:", error);
